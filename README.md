@@ -2,7 +2,7 @@ Author
 ---
 Junaid Ashraf | https://junaidashraf.com | Full Stack Developer | https://www.linkedin.com/in/junaidashraf1/ | Founder:  https://jscreeper.com | Email Id: mail@junaidashraf.com | Contact No: 7278523122 
 
-If you like my work please give your review, thanks :)
+If you like my work then please give your review, thanks :)
 https://g.page/JunaidAshraf1?gm
 
 
