@@ -36,7 +36,7 @@ To use the script as API
 ---
 PHP code to handle the file upload and give results is written on the index page itself, so if you want to use this script as a API then then you can move all the PHP script to some other file and use that file as an endpoint script to handle request and give response or simple remove all the HTML code from index.php and let that be the endpoint. Send POST requests with file as name "fileToUpload". That's it.
 
-**Note:-** File upload folder will be created automatically by default it will be "files/". If you face any problems you make create the folder. The files will be deleted from the folder after giving the results.
+**Note:-** File upload folder will be created automatically if it is not found, by default it will be "files/" you can change it from the script. If you face any problem you can create the folder manually. The files will be deleted from the folder after giving the results to save storage you can comment this in ordered to keep the files in the folder.
 
 
 
