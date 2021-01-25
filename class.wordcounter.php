@@ -1,55 +1,129 @@
 <?php
 include('class.pdf2text.php');
-/* 
- * A collection of simple tools for analysing 
- * .PDF, .DOCX, .DOC and .TXT docs. 
- * 
- *  Copyright (C) 2016-2017
- *    Joseph Blurton (http://github.com/joeblurton)
- *    And other contributors (see attrib below)
- *  
- *  Version 1.0.2
- *
- *  This program is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, either version 3 of the License, or
- *  (at your option) any later version.
- *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
- *
- * ATTRIBUTIONS
- *
- * PageCount_PDF and 
- * PageCount_DOCX by Whiteflash
- * http://stackoverflow.com/questions/5540886/extract-text-from-doc-and-docx/
- *
- * Paragraph tweak by JoshB
- * http://stackoverflow.com/questions/5607594/find-linebreaks-in-a-docx-file-using-php
- * 
- * read_word_doc by
- * Davinder Singh
- * http://stackoverflow.com/questions/7358637/reading-doc-file-in-php
- *
- * Jonny 5's simple word splitter
- * http://php.net/manual/en/function.str-word-count.php#107363
- * 
- * Line Count method by K2xL
- * http://stackoverflow.com/questions/7955402/count-lines-in-a-posted-string
- *
- * RTFTOOLS by
- * Christian Vigh
- * https://github.com/christian-vigh-phpclasses/RtfTools
- *
- * PDF Parser by
- * Smalot GPL 3
- * https://github.com/smalot/pdfparser
- */
+class DocText{
+    private $filename;
+
+    public function __construct($filePath) {
+        $this->filename = $filePath;
+    }
+
+    private function read_doc() {
+        $fileHandle = fopen($this->filename, "r");
+        $line = @fread($fileHandle, filesize($this->filename));   
+        $lines = explode(chr(0x0D),$line);
+        $outtext = "";
+        foreach($lines as $thisline)
+          {
+            $pos = strpos($thisline, chr(0x00));
+            if (($pos !== FALSE)||(strlen($thisline)==0))
+              {
+              } else {
+                $outtext .= $thisline." ";
+              }
+          }
+         $outtext = preg_replace("/[^a-zA-Z0-9\s\,\.\-\n\r\t@\/\_\(\)]/","",$outtext);
+        return $outtext;
+    }
+
+    private function read_docx(){
+
+        $striped_content = '';
+        $content = '';
+
+        $zip = zip_open($this->filename);
+
+        if (!$zip || is_numeric($zip)) return false;
+
+        while ($zip_entry = zip_read($zip)) {
+
+            if (zip_entry_open($zip, $zip_entry) == FALSE) continue;
+
+            if (zip_entry_name($zip_entry) != "word/document.xml") continue;
+
+            $content .= zip_entry_read($zip_entry, zip_entry_filesize($zip_entry));
+
+            zip_entry_close($zip_entry);
+        }// end while
+
+        zip_close($zip);
+
+        $content = str_replace('</w:r></w:p></w:tc><w:tc>', " ", $content);
+        $content = str_replace('</w:r></w:p>', "\r\n", $content);
+        $striped_content = strip_tags($content);
+
+        return $striped_content;
+    }
+
+ /************************excel sheet************************************/
+
+function xlsx_to_text($input_file){
+    $xml_filename = "xl/sharedStrings.xml"; //content file name
+    $zip_handle = new ZipArchive;
+    $output_text = "";
+    if(true === $zip_handle->open($input_file)){
+        if(($xml_index = $zip_handle->locateName($xml_filename)) !== false){
+            $xml_datas = $zip_handle->getFromIndex($xml_index);
+            $xml_handle = DOMDocument::loadXML($xml_datas, LIBXML_NOENT | LIBXML_XINCLUDE | LIBXML_NOERROR | LIBXML_NOWARNING);
+            $output_text = strip_tags($xml_handle->saveXML());
+        }else{
+            $output_text .="";
+        }
+        $zip_handle->close();
+    }else{
+    $output_text .="";
+    }
+    return $output_text;
+}
+
+/*************************power point files*****************************/
+function pptx_to_text($input_file){
+    $zip_handle = new ZipArchive;
+    $output_text = "";
+    if(true === $zip_handle->open($input_file)){
+        $slide_number = 1; //loop through slide files
+        while(($xml_index = $zip_handle->locateName("ppt/slides/slide".$slide_number.".xml")) !== false){
+            $xml_datas = $zip_handle->getFromIndex($xml_index);
+            $xml_handle = DOMDocument::loadXML($xml_datas, LIBXML_NOENT | LIBXML_XINCLUDE | LIBXML_NOERROR | LIBXML_NOWARNING);
+            $output_text .= strip_tags($xml_handle->saveXML());
+            $slide_number++;
+        }
+        if($slide_number == 1){
+            $output_text .="";
+        }
+        $zip_handle->close();
+    }else{
+    $output_text .="";
+    }
+    return $output_text;
+}
+
+
+    public function convertToText() {
+
+        if(isset($this->filename) && !file_exists($this->filename)) {
+            return "File Not exists";
+        }
+
+        $fileArray = pathinfo($this->filename);
+        $file_ext  = $fileArray['extension'];
+        if($file_ext == "doc" || $file_ext == "docx" || $file_ext == "xlsx" || $file_ext == "pptx")
+        {
+            if($file_ext == "doc") {
+                return $this->read_doc();
+            } elseif($file_ext == "docx") {
+                return $this->read_docx();
+            } elseif($file_ext == "xlsx") {
+                return $this->xlsx_to_text();
+            }elseif($file_ext == "pptx") {
+                return $this->pptx_to_text();
+            }
+        } else {
+            return "Invalid File Type";
+        }
+    }
+
+}
+
 
 class DocCounter {
     
@@ -93,7 +167,12 @@ class DocCounter {
                 $obj->pageCount = $this->pageCount($doc);
                 break;
             case "docx":
-                $obj->wordCount = $this->str_word_count_utf8($this->docx2text());
+                $docObj = new DocText($this->file);
+                $docText= $docObj->convertToText();
+                $string = preg_replace('/\s+/', ' ', trim($docText));
+                $words = explode(" ", $string);
+                $obj->wordCount =  count($words);
+                // $obj->wordCount = $this->str_word_count_utf8($this->docx2text());
                 $obj->lineCount = $this->lineCount($this->docx2text());
                 $obj->pageCount = $this->PageCount_DOCX();
                 break;
